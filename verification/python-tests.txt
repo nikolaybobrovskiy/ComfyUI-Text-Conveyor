@@ -1,0 +1,9 @@
+test_entire_unicode_multiline_file_and_metadata (test_node.TextNodeTests.test_entire_unicode_multiline_file_and_metadata) ... ok
+test_invalid_state_and_index_rejected (test_node.TextNodeTests.test_invalid_state_and_index_rejected) ... ok
+test_limits_and_bom (test_node.TextNodeTests.test_limits_and_bom) ... ok
+test_safe_writer_never_uses_filename_as_path_and_preserves_text (test_node.TextNodeTests.test_safe_writer_never_uses_filename_as_path_and_preserves_text) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.060s
+
+OK

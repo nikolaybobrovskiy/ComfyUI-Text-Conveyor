@@ -1,0 +1,15 @@
+✔ rejects invalid UTF8, excessive count, single and total sizes before reading (1.0934ms)
+✔ batch snapshots files and graph, sequentially queues one workflow per selected index (0.6866ms)
+✔ stop only prevents further enqueue, busy run rejected, errors fail fast with honest count (0.3339ms)
+✔ UTF8 BOM and Unicode are decoded whole; duplicates retained in order (0.1202ms)
+✔ extension registers only Text Conveyor and attaches once (2.8095ms)
+✔ Stop during asynchronous snapshot cancels before first enqueue (2.9978ms)
+✔ picker/drop, select, preview, remove/clear, persistence and Run All operate through node widgets (0.8298ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 62.6809

@@ -1,0 +1,42 @@
+{
+  "passed": true,
+  "frontend": true,
+  "queued": 3,
+  "actual": [
+    {
+      "id": "82a6e45a-4791-4578-9aff-da34b9d162eb",
+      "index": 0,
+      "saved": "C:\\Users\\donni\\AppData\\Local\\hermes\\cache\\scratch\\text-conveyor-verification\\output\\text_conveyor\\prompt_0000_0003.txt",
+      "text": "First\r\n猫"
+    },
+    {
+      "id": "4e5d5489-db52-4239-8d73-c7785aae868b",
+      "index": 1,
+      "saved": "C:\\Users\\donni\\AppData\\Local\\hermes\\cache\\scratch\\text-conveyor-verification\\output\\text_conveyor\\prompt_0001_0003.txt",
+      "text": "Second 🌍"
+    },
+    {
+      "id": "178646c3-e491-4b5e-b6dc-189969835409",
+      "index": 2,
+      "saved": "C:\\Users\\donni\\AppData\\Local\\hermes\\cache\\scratch\\text-conveyor-verification\\output\\text_conveyor\\prompt_0002_0003.txt",
+      "text": ""
+    }
+  ],
+  "checks": [
+    "picker",
+    "BOM",
+    "unicode",
+    "multiline",
+    "duplicate filenames",
+    "empty file",
+    "selection",
+    "preview",
+    "remove",
+    "clear",
+    "drag/drop",
+    "workflow persistence",
+    "real queue/history/files",
+    "per-job workflow metadata"
+  ],
+  "pageErrors": []
+}
