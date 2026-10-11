@@ -13,6 +13,10 @@ export async function readTextFiles(files) {
   return result;
 }
 
+// Queue payloads are JSON, not structured-clone data. JSON serialization also
+// unwraps reactive Proxies returned by the frontend without touching live state.
+export const jsonSnapshot = value => JSON.parse(JSON.stringify(value));
+
 export class BatchRunner {
   running = false;
   stopped = false;
@@ -26,12 +30,12 @@ export class BatchRunner {
     try {
       if (!selected.length) throw Error('Text Conveyor: select at least one file');
       if (selected.some(i => !Number.isInteger(i) || i < 0 || i >= entries.length) || new Set(selected).size !== selected.length) throw Error('Text Conveyor: invalid selected index');
-      const base = structuredClone(snapshot);
+      const base = jsonSnapshot(snapshot);
       if (base.output[nodeId]?.class_type !== 'TextConveyor') throw Error('Text Conveyor: node missing or bypassed in workflow');
-      const raw = JSON.stringify(structuredClone(entries));
+      const raw = JSON.stringify(entries);
       for (const index of selected) {
         if (this.stopped) break;
-        const data = structuredClone(base);
+        const data = jsonSnapshot(base);
         data.output[nodeId].inputs.entries_json = raw;
         data.output[nodeId].inputs.index = index;
         const workflowNode = data.workflow.nodes.find(n => String(n.id) === String(nodeId));

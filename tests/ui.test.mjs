@@ -12,6 +12,55 @@ class Element {
   click() { return this.fire('click'); }
 }
 globalThis.document={createElement:tag=>new Element(tag)};
+
+// Simulate reactive restored state without a Vue dependency in the DOM harness.
+function attachWithReactiveEntries(attachUI, node, services, wrap) {
+  const parse = JSON.parse;
+  JSON.parse = (...args) => wrap(parse(...args));
+  try { return attachUI(node, services); }
+  finally { JSON.parse = parse; }
+}
+
+test('Run All snapshots reactive entries before async export and restores controls', async()=>{
+  const {attachUI}=await import('../web/conveyor_ui.mjs');
+  const node={id:7,widgets:[{name:'entries_json',value:'[{"name":"a.txt","text":"A"},{"name":"b.txt","text":"B"}]'},{name:'index',value:0}],properties:{},size:[500,650],addDOMWidget(){return {}},setSize(){}};
+  let resolveSnapshot, entries, exports=0;
+  const jobs=[];
+  const reactive=value=>value && typeof value==='object' ? new Proxy(value,{get:(target,key,receiver)=>reactive(Reflect.get(target,key,receiver))}) : value;
+  const ui=attachWithReactiveEntries(attachUI,node,{
+    snapshot:()=>{exports++;return new Promise(resolve=>resolveSnapshot=resolve);},
+    queue:async data=>{jobs.push(data);return {prompt_id:'ok'};},
+  },data=>{entries=data;return reactive(data);});
+  const running=ui.run.click();
+  assert.equal(ui.run.disabled,true);assert.equal(ui.stop.disabled,false);
+  await ui.run.click();assert.equal(exports,1);
+  entries[1].text='changed during export';
+  resolveSnapshot(reactive({output:{'7':{class_type:'TextConveyor',inputs:{}}},workflow:{nodes:[],extra:{nested:{keep:true}}}}));
+  await running;
+  assert.equal(jobs.length,2);
+  assert.equal(JSON.parse(jobs[1].output['7'].inputs.entries_json)[1].text,'B');
+  assert.equal(ui.run.disabled,false);assert.equal(ui.stop.disabled,true);
+  assert.match(ui.status.textContent,/Queued 2\/2/);
+});
+
+test('entry snapshot failure is reported before export and releases busy controls', async()=>{
+  const {attachUI}=await import('../web/conveyor_ui.mjs');
+  const node={id:7,widgets:[{name:'entries_json',value:'[{"name":"a.txt","text":"A"}]'},{name:'index',value:0}],properties:{},size:[500,650],addDOMWidget(){return {}},setSize(){}};
+  let broken=false, exports=0, queued=0;
+  const ui=attachWithReactiveEntries(attachUI,node,{
+    snapshot:async()=>{exports++;return {output:{'7':{class_type:'TextConveyor',inputs:{}}},workflow:{nodes:[]}};},
+    queue:async()=>{queued++;return {prompt_id:'ok'};},
+  },data=>new Proxy(data,{get(target,key,receiver){
+    if(broken && key==='toJSON')throw Error('snapshot unavailable');
+    return Reflect.get(target,key,receiver);
+  }}));
+  broken=true;
+  await ui.run.click();
+  assert.equal(exports,0);assert.equal(queued,0);
+  assert.match(ui.status.textContent,/Failed after 0\/1 acknowledged: snapshot unavailable/);
+  assert.equal(ui.run.disabled,false);assert.equal(ui.stop.disabled,true);
+  broken=false;await ui.run.click();assert.equal(queued,1);
+});
 test('Stop during asynchronous snapshot cancels before first enqueue',async()=>{
  const {attachUI}=await import('../web/conveyor_ui.mjs');
  const node={id:7,widgets:[{name:'entries_json',value:'[{"name":"a.txt","text":"A"}]'},{name:'index',value:0}],properties:{},size:[500,650],addDOMWidget(){return {}},setSize(){}};

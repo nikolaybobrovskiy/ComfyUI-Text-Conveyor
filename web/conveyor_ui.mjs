@@ -1,4 +1,4 @@
-import { readTextFiles, BatchRunner, MAX_FILES, MAX_TOTAL_BYTES } from './conveyor_core.mjs';
+import { readTextFiles, BatchRunner, jsonSnapshot, MAX_FILES, MAX_TOTAL_BYTES } from './conveyor_core.mjs';
 
 export function attachUI(node, services) {
   const entriesWidget = node.widgets.find(w => w.name === 'entries_json');
@@ -61,9 +61,10 @@ export function attachUI(node, services) {
   run.addEventListener('click',async()=>{
     if(busy||loading)return;
     busy=true;render();status.textContent='Preparing workflow snapshot…';
-    const files=structuredClone(entries), indexes=entries.map((_,i)=>i).filter(i=>selected.has(i));
+    const indexes=entries.map((_,i)=>i).filter(i=>selected.has(i));
     stopRequested=false;
     try{
+      const files=jsonSnapshot(entries);
       const snapshot=await services.snapshot();
       if(stopRequested){status.textContent=`Stopped. Queued 0/${indexes.length}`;return;}
       const result=await runner.run(files,indexes,snapshot,String(node.id),services.queue,p=>{status.textContent=`Queued ${p.queued}/${p.total} (not execution completion)`;});
