@@ -61,6 +61,24 @@ test('entry snapshot failure is reported before export and releases busy control
   assert.equal(ui.run.disabled,false);assert.equal(ui.stop.disabled,true);
   broken=false;await ui.run.click();assert.equal(queued,1);
 });
+test('export failure logs original stack, stage and revision without retrying', async()=>{
+ const {attachUI, TEXT_CONVEYOR_REVISION}=await import('../web/conveyor_ui.mjs');
+ const node={id:7,widgets:[{name:'entries_json',value:'[{"name":"a.txt","text":"A"}]'},{name:'index',value:0}],properties:{},size:[500,650],addDOMWidget(){return {}},setSize(){}};
+ const failure=new DOMException("Failed to execute 'structuredClone' on 'Window': #<Object> could not be cloned.",'DataCloneError');
+ let queued=0; const logs=[];const original=console.error;
+ const ui=attachUI(node,{snapshot:async()=>{throw failure;},queue:async()=>{queued++;}});
+ console.error=(...args)=>logs.push(args);
+ try {await ui.run.click();}finally{console.error=original;}
+ assert.equal(queued,0);assert.equal(logs.length,1);
+ assert.equal(logs[0][1].stage,'graph export');
+ assert.equal(logs[0][1].revision,TEXT_CONVEYOR_REVISION);
+ assert.ok(TEXT_CONVEYOR_REVISION);
+ assert.equal(logs[0][2],failure);assert.ok(logs[0][2].stack);
+ assert.match(ui.status.textContent,/graph export/);
+ assert.ok(ui.status.textContent.includes(TEXT_CONVEYOR_REVISION));
+ assert.equal(ui.run.disabled,false);assert.equal(ui.stop.disabled,true);
+});
+
 test('Stop during asynchronous snapshot cancels before first enqueue',async()=>{
  const {attachUI}=await import('../web/conveyor_ui.mjs');
  const node={id:7,widgets:[{name:'entries_json',value:'[{"name":"a.txt","text":"A"}]'},{name:'index',value:0}],properties:{},size:[500,650],addDOMWidget(){return {}},setSize(){}};

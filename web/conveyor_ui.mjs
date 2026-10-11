@@ -1,5 +1,8 @@
 import { readTextFiles, BatchRunner, jsonSnapshot, MAX_FILES, MAX_TOTAL_BYTES } from './conveyor_core.mjs';
 
+// Visible in failures to distinguish deployed code from a cached older module.
+export const TEXT_CONVEYOR_REVISION = '196b67d-export-diagnostics-1';
+
 export function attachUI(node, services) {
   const entriesWidget = node.widgets.find(w => w.name === 'entries_json');
   const indexWidget = node.widgets.find(w => w.name === 'index');
@@ -63,13 +66,22 @@ export function attachUI(node, services) {
     busy=true;render();status.textContent='Preparing workflow snapshot…';
     const indexes=entries.map((_,i)=>i).filter(i=>selected.has(i));
     stopRequested=false;
+    let stage='entry snapshot';
     try{
       const files=jsonSnapshot(entries);
+      stage='graph export';
       const snapshot=await services.snapshot();
       if(stopRequested){status.textContent=`Stopped. Queued 0/${indexes.length}`;return;}
-      const result=await runner.run(files,indexes,snapshot,String(node.id),services.queue,p=>{status.textContent=`Queued ${p.queued}/${p.total} (not execution completion)`;});
+      stage='queue payload snapshot';
+      const queue=async data=>{stage='queue request';const response=await services.queue(data);stage='queue acknowledgement';return response;};
+      const result=await runner.run(files,indexes,snapshot,String(node.id),queue,p=>{status.textContent=`Queued ${p.queued}/${p.total} (not execution completion)`;});
       status.textContent=`${result.stopped?'Stopped. ':''}Queued ${result.queued}/${result.total} (not execution completion)`;
-    }catch(error){status.textContent=`Failed after ${error.queued??0}/${error.total??indexes.length} acknowledged: ${error.message}. No automatic retry; check Comfy queue before retrying.`;}
+    }catch(error){
+      // Pass the original exception, not just message: browser devtools preserves
+      // its stack and BatchRunner cause. Never log graph/file/prompt contents.
+      console.error('[Text Conveyor] Run All failed',{revision:TEXT_CONVEYOR_REVISION,stage,nodeId:String(node.id),queued:error.queued??0,total:error.total??indexes.length},error);
+      status.textContent=`Failed after ${error.queued??0}/${error.total??indexes.length} acknowledged: ${error.message}. Stage: ${stage}; revision: ${TEXT_CONVEYOR_REVISION}. See browser console for full stack. No automatic retry; check Comfy queue before retrying.`;
+    }
     finally{busy=false;render();}
   });
   const stopBatch=()=>{stopRequested=true;runner.stop();};
